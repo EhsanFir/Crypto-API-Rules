@@ -1,0 +1,59 @@
+SPEC javax.crypto.KeyAgreement
+
+OBJECTS
+	java.lang.String algorithm;
+	java.lang.String symmetricKeyAlgorithm;
+	java.security.Key pubKey;
+	java.security.Key privKey;
+	javax.crypto.SecretKey sharedKey;
+	boolean lastPhase;
+	byte[] sharedSecretBuffer;
+	int offset;
+	java.security.spec.AlgorithmParameterSpec params;
+	java.security.SecureRandom random;
+	
+EVENTS
+	g1: getInstance(algorithm);
+	g2: getInstance(algorithm, _);
+	Get := g1 | g2;
+    
+	i1: init(privKey);
+	i2: init(privKey, params);
+	i3: init(privKey, params, random);
+	i4: init(privKey, random);
+	Init := i1 | i2 | i3 | i4;
+    
+	dp1: doPhase(pubKey, lastPhase);
+	DoPhase := dp1;
+    
+	gs1: sharedSecretBuffer = generateSecret();
+	gs2: generateSecret(sharedSecretBuffer, offset);
+	GenSecretBuffer := gs1 | g2;
+	
+	gs3: sharedKey = generateSecret(symmetricKeyAlgorithm);
+	GenSecret := gs3;
+    
+ORDER
+	Get, Init, DoPhase, (GenSecret | GenSecretBuffer)
+	
+CONSTRAINTS
+	algorithm in {"DH", "DiffieHellman", "NH" ,"ECDH", "ECDHC"};
+	symmetricKeyAlgorithm in {"AES", "HmacSHA256", "HmacSHA384", "HmacSHA512",
+			 "HMACSHA3-256", "HMACSHA3-384", "HMACSHA3-512"};
+	
+	// Note: The constraint `noCallTo[gs3];` has been removed.
+	//       The support for the `generateSecret` method was disabled for the SunJCE and SunPKCS11
+	//       providers, but it still works for BC.
+	//       An illegal use of this method will result in a `NoSuchAlgorithmException`.
+	//       See PR#111 and <https://www.oracle.com/java/technologies/javase/8u161-relnotes.html#JDK-8185292>
+	
+REQUIRES
+	randomized[random];
+	generatedPrivkey[privKey];
+	generatedPubkey[pubKey];
+	algorithm in {"DiffieHellman", "DH"} => preparedDH[params];
+	algorithm in {"ECDH", "ECDHC"} => preparedEC[params];
+    
+ENSURES
+	generatedKey[sharedKey, symmetricKeyAlgorithm] after GenSecret;
+	preparedKeyMaterial[sharedSecretBuffer] after GenSecretBuffer;
