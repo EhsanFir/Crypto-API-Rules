@@ -39,7 +39,10 @@ ORDER
 	Ins, (Seed?, End*)*
  	
 CONSTRAINTS
-	algorithm in {"SHA1PRNG", "Windows-PRNG", "NativePRNG", "NativePRNGBlocking", "NativePRNGNonBlocking", "PKCS11", "DEFAULT", "NONCEANDIV"};
+        \\"SHA1PRNG" is removed from the list, however ...
+	algorithm in {"Windows-PRNG", "NativePRNG", "NativePRNGBlocking", "NativePRNGNonBlocking", "PKCS11", "DEFAULT", "NONCEANDIV"};
+
+notHardCoded[seed];
 	
 REQUIRES	
 	randomized[seed];
